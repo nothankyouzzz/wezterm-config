@@ -134,8 +134,30 @@ function M.pane_domain_name(target)
 	return M.pane_value(target, "get_domain_name", "domain_name", "")
 end
 
+function M.pane_user_vars(target)
+	local vars = M.pane_value(target, "get_user_vars", "user_vars", {})
+	if type(vars) ~= "table" then
+		return {}
+	end
+	return vars
+end
+
 function M.dir_label(target)
 	return M.basename(M.pane_cwd(target))
+end
+
+function M.command_label(text)
+	text = M.trim(text)
+	if text == "" then
+		return nil
+	end
+
+	local executable = text:match('^"([^"]+)"')
+		or text:match("^'([^']+)'")
+		or text:match("^(%S+)")
+		or text
+
+	return M.normalized_label_text(executable)
 end
 
 function M.normalized_label_text(text)
@@ -152,11 +174,26 @@ function M.normalized_label_text(text)
 end
 
 function M.domain_label(target)
-	local name = M.pane_domain_name(target):gsub("^WSL:", "")
-	if name == C.WSL_DISTRO then
-		return "ubuntu"
+	local name = M.trim(M.pane_domain_name(target))
+	if name == "" then
+		return ""
 	end
+	name = name:match("^WSL:(.+)$") or name
 	return name
+end
+
+function M.tab_fallback_label(target)
+	local domain = M.trim(M.pane_domain_name(target))
+	if domain == "" then
+		return "local"
+	end
+
+	if domain == "local" then
+		local user_vars = M.pane_user_vars(target)
+		return M.command_label(user_vars.WEZTERM_PROG) or "local"
+	end
+
+	return M.domain_label(target)
 end
 
 return M

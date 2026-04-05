@@ -6,10 +6,6 @@ local M = {}
 
 local function format_tab_title(tab, _, _, _, _, max_width)
 	local function tab_label(t)
-		local manual = U.normalized_label_text(t.tab_title)
-		if manual then
-			return manual
-		end
 		local process = U.normalized_label_text(U.pane_process_name(t.active_pane))
 		if process then
 			return process
@@ -18,7 +14,7 @@ local function format_tab_title(tab, _, _, _, _, max_width)
 		if title then
 			return title
 		end
-		return "shell"
+		return U.tab_fallback_label(t.active_pane)
 	end
 
 	local available_width = math.max(math.floor(max_width or 0), 1)

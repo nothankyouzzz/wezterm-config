@@ -2,9 +2,6 @@ local wezterm = require("wezterm")
 
 local M = {}
 
--- WSL
-M.WSL_DISTRO = "Ubuntu-24.04"
-
 M.IGNORED_TAB_LABELS = {
 	wslhost = true,
 	conhost = true,
