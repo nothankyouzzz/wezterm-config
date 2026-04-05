@@ -44,6 +44,7 @@ local function update_right_status(window, pane)
 	push_part(U.domain_label(pane), C.TITLE_BAR.muted)
 	push_part(U.dir_label(pane), C.TITLE_BAR.fg)
 	push_part(wezterm.strftime("%a %H:%M"), C.TITLE_BAR.accent)
+	table.insert(formatted, { Text = " " })
 
 	window:set_right_status(wezterm.format(formatted))
 end
