@@ -48,10 +48,11 @@ M.TAB_BAR = {
 	min_title_width = 16,
 	show_index = false,
 	show_new_tab_button = false,
-	status_update_interval_ms = 1000,
+	status_update_interval_ms = 200,
 	status_leading_text = M.STATUS_DOT .. "  ",
 	status_separator = "  " .. M.DOT .. "  ",
 	status_right_padding = " ",
+	leader_label = "LEADER",
 }
 
 M.GRAPHICS = {

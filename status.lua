@@ -30,6 +30,14 @@ local function push_status_part(formatted, text, color)
 	table.insert(formatted, { Text = text })
 end
 
+local function current_mode_label(window)
+	if window:leader_is_active() then
+		return C.TAB_BAR.leader_label
+	end
+
+	return nil
+end
+
 local function format_tab_title(tab, _, _, _, _, max_width)
 	local available_width = math.max(math.floor(max_width or 0), 1)
 	local title = U.truncate_right(tab_label(tab), available_width)
@@ -43,6 +51,11 @@ local function update_right_status(window, pane)
 	table.insert(formatted, { Foreground = { Color = C.TITLE_BAR.accent } })
 	table.insert(formatted, { Text = C.TAB_BAR.status_leading_text })
 
+	local mode_label = current_mode_label(window)
+	if mode_label then
+		table.insert(formatted, { Foreground = { Color = C.TITLE_BAR.accent } })
+		table.insert(formatted, { Text = mode_label })
+	end
 	push_status_part(formatted, U.domain_label(pane), C.TITLE_BAR.muted)
 	push_status_part(formatted, U.dir_label(pane), C.TITLE_BAR.fg)
 	push_status_part(formatted, wezterm.strftime("%a %H:%M"), C.TITLE_BAR.accent)
