@@ -11,6 +11,7 @@ Modular WezTerm configuration for Windows/WSL development workflows.
   utils.lua            # Width helpers, pane accessors, and label normalization
   appearance.lua       # Window, font, and tab bar styling
   graphics.lua         # Per-machine rendering profile selection
+  keys.lua             # Leader-based pane, tab, and workspace shortcuts
   status.lua           # Tab title formatting and right status bar
   run_once_wezterm_stub.sh
 ```
@@ -18,6 +19,7 @@ Modular WezTerm configuration for Windows/WSL development workflows.
 ## Features
 
 - Auto-detects the higher-performance Windows GPU path and prefers WebGPU at 165fps there, while keeping a conservative OpenGL 120fps fallback for the integrated-GPU machine
+- Leader-based key bindings for pane navigation, pane resizing, tab control, workspace switching, and launcher access
 - Tab titles prefer foreground process name, then pane title, then a domain-aware fallback label
 - Tab titles are width-aware, so wide Unicode glyphs do not get truncated early
 - Right status bar shows domain, current directory, and time with spacing tuned for integrated window buttons
@@ -82,3 +84,5 @@ Tab titles are resolved from the active pane in this order:
 3. domain-aware fallback label
 
 WSL domains are normalized from `WSL:<distro>` to `<distro>`, and the local Windows domain uses `WEZTERM_PROG` when shell integration provides it.
+
+The leader key is `CTRL-a`. Press `CTRL-a CTRL-a` to send a literal `CTRL-a` through to the running program.

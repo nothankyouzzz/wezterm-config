@@ -27,6 +27,7 @@ end
 
 require("appearance").apply(config)
 require("graphics").apply(config)
+require("keys").apply(config)
 require("status").register()
 
 return config
