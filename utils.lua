@@ -1,3 +1,4 @@
+local wezterm = require("wezterm")
 local C = require("constants")
 
 local M = {}
@@ -9,17 +10,66 @@ function M.trim(text)
 	return text:match("^%s*(.-)%s*$")
 end
 
+function M.display_width(text)
+	if not text or text == "" then
+		return 0
+	end
+
+	local ok, width = pcall(wezterm.column_width, text)
+	if ok and type(width) == "number" then
+		return width
+	end
+
+	local ok_len, length = pcall(utf8.len, text)
+	if ok_len and type(length) == "number" then
+		return length
+	end
+
+	return #text
+end
+
+function M.center_text(text, width)
+	width = math.max(math.floor(width or 0), 0)
+	if width == 0 then
+		return ""
+	end
+
+	local text_width = M.display_width(text)
+	if text_width >= width then
+		return text
+	end
+
+	local total_pad = width - text_width
+	local left_pad = math.floor(total_pad / 2)
+	local right_pad = total_pad - left_pad
+	return string.rep(" ", left_pad) .. text .. string.rep(" ", right_pad)
+end
+
 function M.truncate_right(text, max_width)
 	if not text or text == "" then
 		return ""
 	end
-	if #text <= max_width then
+	max_width = math.max(math.floor(max_width or 0), 0)
+	if max_width == 0 then
+		return ""
+	end
+	if M.display_width(text) <= max_width then
 		return text
 	end
-	if max_width <= 3 then
-		return text:sub(1, max_width)
+
+	local ok, truncated = pcall(wezterm.truncate_right, text, max_width)
+	if ok and type(truncated) == "string" then
+		return truncated
 	end
-	return text:sub(1, max_width - 3) .. "..."
+
+	if max_width <= 3 then
+		local stop = utf8.offset(text, max_width + 1)
+		return stop and text:sub(1, stop - 1) or text
+	end
+
+	local stop = utf8.offset(text, max_width - 2)
+	local prefix = stop and text:sub(1, stop - 1) or text
+	return prefix .. "..."
 end
 
 function M.basename(path)

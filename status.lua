@@ -21,15 +21,10 @@ local function format_tab_title(tab, _, _, _, _, max_width)
 		return "shell"
 	end
 
-	local title = U.truncate_right(tab_label(tab), math.max(max_width - 2, 10))
-	local min_width = 16
-	if #title < min_width then
-		local total_pad = min_width - #title
-		local left_pad = math.floor(total_pad / 2)
-		local right_pad = total_pad - left_pad
-		title = string.rep(" ", left_pad) .. title .. string.rep(" ", right_pad)
-	end
-	return title
+	local available_width = math.max(math.floor(max_width or 0), 1)
+	local title = U.truncate_right(tab_label(tab), available_width)
+	local min_width = math.min(16, available_width)
+	return U.center_text(title, min_width)
 end
 
 local function update_right_status(window, pane)
