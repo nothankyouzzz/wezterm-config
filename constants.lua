@@ -1,6 +1,6 @@
-local wezterm = require("wezterm")
-
 local M = {}
+local DOT = utf8.char(0x2022)
+local STATUS_DOT = utf8.char(0x25CF)
 
 -- Label filtering
 M.IGNORED_TAB_LABELS = {
@@ -10,13 +10,18 @@ M.IGNORED_TAB_LABELS = {
 }
 
 -- Typography
-M.DOT = utf8.char(0x2022)
-M.STATUS_DOT = utf8.char(0x25CF)
-
-M.BODY_FONT = wezterm.font_with_fallback({
-	"CaskaydiaCove Nerd Font Mono",
-})
-M.TITLE_BAR_FONT = wezterm.font("CaskaydiaCove Nerd Font Mono")
+M.FONTS = {
+	body = {
+		fallback = {
+			"CaskaydiaCove Nerd Font Mono",
+		},
+		size = 13,
+	},
+	title_bar = {
+		family = "CaskaydiaCove Nerd Font Mono",
+		size = 11.5,
+	},
+}
 
 -- Layout and sizing
 M.WINDOW = {
@@ -34,8 +39,6 @@ M.WINDOW = {
 
 M.THEME = {
 	color_scheme = "Tokyo Night Moon",
-	body_font_size = 13,
-	title_bar_font_size = 11.5,
 	inactive_pane_hsb = {
 		saturation = 0.95,
 		brightness = 0.8,
@@ -48,11 +51,36 @@ M.TAB_BAR = {
 	min_title_width = 16,
 	show_index = false,
 	show_new_tab_button = false,
-	status_update_interval_ms = 200,
-	status_leading_text = M.STATUS_DOT .. "  ",
-	status_separator = "  " .. M.DOT .. "  ",
+	status_update_interval_ms = 1000,
+	status_leading_text = STATUS_DOT .. "  ",
+	status_separator = "  " .. DOT .. "  ",
 	status_right_padding = " ",
 	leader_label = "LEADER",
+}
+
+M.LEADER = {
+	key = "a",
+	mods = "CTRL",
+	timeout_milliseconds = 1000,
+}
+
+M.WSL = {
+	preferred_distributions = {
+		{ type = "exact", value = "Ubuntu-24.04" },
+		{ type = "pattern", value = "^Ubuntu" },
+	},
+}
+
+M.SSH = {
+	custom_domains = {
+		{
+			name = "syncthing",
+			remote_address = "syncthing",
+			username = "azureuser",
+			assume_shell = "Posix",
+			multiplexing = "None",
+		},
+	},
 }
 
 M.GRAPHICS = {

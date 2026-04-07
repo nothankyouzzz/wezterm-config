@@ -1,3 +1,4 @@
+local wezterm = require("wezterm")
 local C = require("constants")
 
 local M = {}
@@ -9,8 +10,8 @@ function M.apply(cfg)
 	cfg.initial_rows = C.WINDOW.initial_rows
 	cfg.window_padding = C.WINDOW.padding
 
-	cfg.font = C.BODY_FONT
-	cfg.font_size = C.THEME.body_font_size
+	cfg.font = wezterm.font_with_fallback(C.FONTS.body.fallback)
+	cfg.font_size = C.FONTS.body.size
 	cfg.color_scheme = C.THEME.color_scheme
 	cfg.use_fancy_tab_bar = C.TAB_BAR.use_fancy
 	cfg.tab_max_width = C.TAB_BAR.max_width
@@ -48,8 +49,8 @@ function M.apply(cfg)
 	}
 
 	cfg.window_frame = {
-		font = C.TITLE_BAR_FONT,
-		font_size = C.THEME.title_bar_font_size,
+		font = wezterm.font(C.FONTS.title_bar.family),
+		font_size = C.FONTS.title_bar.size,
 		active_titlebar_bg = C.TITLE_BAR.bg,
 		inactive_titlebar_bg = C.TITLE_BAR.bg,
 		active_titlebar_fg = C.TITLE_BAR.fg,

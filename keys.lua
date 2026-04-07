@@ -1,15 +1,56 @@
 local wezterm = require("wezterm")
+local C = require("constants")
+local Status = require("status")
 
 local act = wezterm.action
 local M = {}
 
-local LEADER = {
-	key = "a",
-	mods = "CTRL",
-	timeout_milliseconds = 1000,
+local RESIZE_STEP = 3
+local TAB_SELECT_BINDINGS = {
+	{ key = "1", index = 0 },
+	{ key = "2", index = 1 },
+	{ key = "3", index = 2 },
+	{ key = "4", index = 3 },
+	{ key = "5", index = 4 },
+	{ key = "6", index = 5 },
+	{ key = "7", index = 6 },
+	{ key = "8", index = 7 },
+	{ key = "9", index = 8 },
 }
 
-local RESIZE_STEP = 3
+local function perform_action_and_refresh(window, pane, action)
+	window:perform_action(action, pane)
+	Status.deactivate_custom_leader(window, pane)
+end
+
+local function leader_binding(key, action, mods)
+	return {
+		key = key,
+		mods = mods,
+		action = wezterm.action_callback(function(window, pane)
+			perform_action_and_refresh(window, pane, action)
+		end),
+	}
+end
+
+local function leader_activation()
+	return wezterm.action_callback(function(window, pane)
+		Status.activate_custom_leader(window, pane)
+		window:perform_action(act.ActivateKeyTable({
+			name = Status.CUSTOM_LEADER_KEY_TABLE,
+			one_shot = true,
+			timeout_milliseconds = C.LEADER.timeout_milliseconds,
+			until_unknown = true,
+			prevent_fallback = true,
+		}), pane)
+	end)
+end
+
+local function append_tab_select_bindings(bindings)
+	for _, binding in ipairs(TAB_SELECT_BINDINGS) do
+		table.insert(bindings, leader_binding(binding.key, act.ActivateTab(binding.index)))
+	end
+end
 
 local function trim(text)
 	if not text or text == "" then
@@ -31,89 +72,54 @@ local function new_workspace_prompt()
 end
 
 function M.apply(cfg)
-	cfg.leader = LEADER
-
 	local keys = {
-		-- Send CTRL-A through to the terminal with a double tap.
 		{
-			key = "a",
-			mods = "LEADER|CTRL",
-			action = act.SendKey({ key = "a", mods = "CTRL" }),
-		},
-
-		-- Panes
-		{
-			key = "v",
-			mods = "LEADER",
-			action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
-		},
-		{
-			key = "s",
-			mods = "LEADER",
-			action = act.SplitVertical({ domain = "CurrentPaneDomain" }),
-		},
-		{ key = "h", mods = "LEADER", action = act.ActivatePaneDirection("Left") },
-		{ key = "j", mods = "LEADER", action = act.ActivatePaneDirection("Down") },
-		{ key = "k", mods = "LEADER", action = act.ActivatePaneDirection("Up") },
-		{ key = "l", mods = "LEADER", action = act.ActivatePaneDirection("Right") },
-		{
-			key = "r",
-			mods = "LEADER",
-			action = act.ActivateKeyTable({
-				name = "resize_pane",
-				one_shot = false,
-				until_unknown = true,
-			}),
-		},
-		{ key = "z", mods = "LEADER", action = act.TogglePaneZoomState },
-		{
-			key = "x",
-			mods = "LEADER",
-			action = act.CloseCurrentPane({ confirm = true }),
-		},
-
-		-- Tabs
-		{ key = "c", mods = "LEADER", action = act.SpawnTab("CurrentPaneDomain") },
-		{ key = "n", mods = "LEADER", action = act.ActivateTabRelative(1) },
-		{ key = "p", mods = "LEADER", action = act.ActivateTabRelative(-1) },
-		{ key = ",", mods = "LEADER", action = act.MoveTabRelative(-1) },
-		{ key = ".", mods = "LEADER", action = act.MoveTabRelative(1) },
-		{
-			key = "q",
-			mods = "LEADER",
-			action = act.CloseCurrentTab({ confirm = true }),
-		},
-
-		-- Workspaces and launcher
-		{
-			key = "w",
-			mods = "LEADER",
-			action = act.ShowLauncherArgs({
-				flags = "FUZZY|WORKSPACES",
-				title = "Workspaces",
-			}),
-		},
-		{ key = "W", mods = "LEADER|SHIFT", action = new_workspace_prompt() },
-		{
-			key = "Space",
-			mods = "LEADER",
-			action = act.ShowLauncherArgs({
-				flags = "FUZZY|TABS|WORKSPACES|DOMAINS|COMMANDS|LAUNCH_MENU_ITEMS",
-				title = "Launcher",
-			}),
+			key = C.LEADER.key,
+			mods = C.LEADER.mods,
+			action = leader_activation(),
 		},
 	}
 
-	for i = 1, 9 do
-		table.insert(keys, {
-			key = tostring(i),
-			mods = "LEADER",
-			action = act.ActivateTab(i - 1),
-		})
-	end
-
 	cfg.keys = keys
 	cfg.key_tables = {
+		[Status.CUSTOM_LEADER_KEY_TABLE] = {
+			-- Send CTRL-A through to the terminal with a double tap.
+			leader_binding(C.LEADER.key, act.SendKey({ key = C.LEADER.key, mods = C.LEADER.mods }), C.LEADER.mods),
+
+			-- Panes
+			leader_binding("v", act.SplitHorizontal({ domain = "CurrentPaneDomain" })),
+			leader_binding("s", act.SplitVertical({ domain = "CurrentPaneDomain" })),
+			leader_binding("h", act.ActivatePaneDirection("Left")),
+			leader_binding("j", act.ActivatePaneDirection("Down")),
+			leader_binding("k", act.ActivatePaneDirection("Up")),
+			leader_binding("l", act.ActivatePaneDirection("Right")),
+			leader_binding("r", act.ActivateKeyTable({
+				name = "resize_pane",
+				one_shot = false,
+				until_unknown = true,
+			})),
+			leader_binding("z", act.TogglePaneZoomState),
+			leader_binding("x", act.CloseCurrentPane({ confirm = true })),
+
+			-- Tabs
+			leader_binding("c", act.SpawnTab("CurrentPaneDomain")),
+			leader_binding("n", act.ActivateTabRelative(1)),
+			leader_binding("p", act.ActivateTabRelative(-1)),
+			leader_binding(",", act.MoveTabRelative(-1)),
+			leader_binding(".", act.MoveTabRelative(1)),
+			leader_binding("q", act.CloseCurrentTab({ confirm = true })),
+
+			-- Workspaces and launcher
+			leader_binding("w", act.ShowLauncherArgs({
+				flags = "FUZZY|WORKSPACES",
+				title = "Workspaces",
+			})),
+			leader_binding("W", new_workspace_prompt(), "SHIFT"),
+			leader_binding("Space", act.ShowLauncherArgs({
+				flags = "FUZZY|TABS|WORKSPACES|DOMAINS|COMMANDS|LAUNCH_MENU_ITEMS",
+				title = "Launcher",
+			})),
+		},
 		resize_pane = {
 			{ key = "h", action = act.AdjustPaneSize({ "Left", RESIZE_STEP }) },
 			{ key = "j", action = act.AdjustPaneSize({ "Down", RESIZE_STEP }) },
@@ -128,6 +134,8 @@ function M.apply(cfg)
 			{ key = "q", action = "PopKeyTable" },
 		},
 	}
+
+	append_tab_select_bindings(cfg.key_tables[Status.CUSTOM_LEADER_KEY_TABLE])
 end
 
 return M
