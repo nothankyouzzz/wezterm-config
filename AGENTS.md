@@ -1,26 +1,84 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-This repository is a modular WezTerm config rooted at `~/.config/wezterm`. `wezterm.lua` is the entry point and should stay thin: it wires modules together and returns the final config. Put declarative shared config in `constants.lua`, helpers in `utils.lua`, and feature-specific logic in focused modules such as `appearance.lua`, `keys.lua`, `domains.lua`, and `status.lua`. Keep implementation-only constants local to the module that owns them. Shell automation lives in `run_once_wezterm_stub.sh`; the generated `config_watcher.sh` is ignored and should not be committed.
+## Overview
 
-## Build, Test, and Development Commands
-There is no build step. Use these commands during local development:
+- This repository is a modular WezTerm config rooted at `~/.config/wezterm`.
+- Keep `wezterm.lua` thin: it should only assemble modules and return the final config.
+- Favor small, focused modules over broad utility layers or shared abstractions.
 
-- `bash ~/.config/wezterm/run_once_wezterm_stub.sh`: regenerate the Windows `%USERPROFILE%\.wezterm.lua` stub and local watcher script after path or bootstrap changes.
-- `bash ~/.config/wezterm/config_watcher.sh`: watch `.lua` files and touch the Windows stub to trigger WezTerm reloads.
-- `wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table leader_mode`: validate that WezTerm can parse the config and materialize the custom leader key table.
-- `systemctl --user enable --now wezterm-watch.service`: enable the watcher as a user service if your machine is configured for it.
+## Repository Layout
 
-Validate changes by running the CLI parse check above, then reloading WezTerm on Windows and confirming the config loads without runtime errors.
+### Core modules
 
-## Coding Style & Naming Conventions
-Use Lua with tabs for indentation, matching the existing files. Prefer small modules that expose `apply(config)` for config mutation or `register()` for event hooks. Use `local` for module-scoped values, keep comments brief, and name files by responsibility (`status.lua`, `graphics.lua`). Preserve the current lowercase snake_case style for locals and helper functions.
+- `wezterm.lua`: entry point
+- `constants.lua`: declarative shared config and machine-specific preferences
+- `utils.lua`: shared helpers
+- `appearance.lua`, `keys.lua`, `domains.lua`, `status.lua`, `graphics.lua`: feature modules
 
-## Testing Guidelines
-This repo currently relies on manual verification rather than an automated test suite. After edits, run the `wezterm --config-file ... show-keys` parse check, then reload WezTerm and exercise the affected behavior: custom leader bindings, tab titles, domain selection, status text, or stub generation. If you change the bootstrap script, rerun it and confirm that `.wezterm.lua` and `config_watcher.sh` are regenerated correctly.
+### Scripts and generated files
 
-## Commit & Pull Request Guidelines
-Recent history uses Conventional Commit-style prefixes such as `feat:`, `fix:`, and `refactor:`. Keep commit subjects short and imperative, for example `fix: handle empty pane title`. PRs should explain the user-visible behavior change, call out Windows/WSL assumptions, and include screenshots or short terminal notes when the change affects tab bar, status line, or rendering behavior.
+- `run_once_wezterm_stub.sh`: generates the Windows `%USERPROFILE%\\.wezterm.lua` stub and local watcher script
+- `config_watcher.sh`: generated artifact; do not commit it
 
-## Configuration Notes
-Keep machine-specific SSH hosts, usernames, and WSL domain preferences in `constants.lua`; do not scatter them across feature modules. Absolute Windows paths should still stay confined to the stub generator. Keep generated artifacts out of Git, and document any new external dependency or validation step in `README.md`.
+### Ownership rules
+
+- Keep implementation-only constants inside the module that owns the behavior.
+- Keep machine-specific SSH hosts, usernames, and WSL preferences in `constants.lua`.
+- Keep absolute Windows paths confined to the stub generator.
+
+## Editing Rules
+
+### Style
+
+- Use Lua with tabs for indentation, matching the existing files.
+- Prefer modules that expose `apply(config)` for config mutation or `register()` for event hooks.
+- Use `local` for module-scoped values.
+- Preserve the current lowercase `snake_case` style for locals and helper functions.
+- Keep comments brief and high-signal.
+
+### Naming and structure
+
+- Name files by responsibility, for example `status.lua` or `graphics.lua`.
+- Prefer the smallest change that fixes the problem over introducing new abstractions.
+
+## Development Commands
+
+- `bash ~/.config/wezterm/run_once_wezterm_stub.sh`
+  Regenerate the Windows stub and local watcher script after bootstrap or path changes.
+- `bash ~/.config/wezterm/config_watcher.sh`
+  Watch `.lua` files and touch the Windows stub to trigger WezTerm reloads.
+- `wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table leader_mode`
+  Validate that WezTerm can parse the config and materialize the custom leader key table.
+- `systemctl --user enable --now wezterm-watch.service`
+  Enable the watcher as a user service if this machine is configured for it.
+
+## Validation
+
+- There is no automated test suite; rely on lightweight CLI checks plus manual verification.
+- After edits, run the `wezterm --config-file ... show-keys --lua --key-table leader_mode` parse check.
+- Then reload WezTerm on Windows and confirm the affected behavior works without runtime errors.
+- Exercise the changed behavior directly, such as:
+  - custom leader bindings
+  - tab titles
+  - domain selection
+  - status text
+  - stub generation
+- If you change the bootstrap script, rerun it and confirm that `.wezterm.lua` and `config_watcher.sh` are regenerated correctly.
+
+## Commit Guidelines
+
+- Use Conventional Commit-style prefixes such as `feat:`, `fix:`, and `refactor:`.
+- Keep commit subjects short and imperative, for example `fix: handle empty pane title`.
+- Keep generated artifacts out of Git.
+
+## PR Guidelines
+
+- Explain the user-visible behavior change.
+- Call out any Windows or WSL assumptions.
+- Include screenshots or short terminal notes when the change affects the tab bar, status line, or rendering behavior.
+
+## Documentation Rules
+
+- Document new external dependencies in `README.md`.
+- Document any new validation step in `README.md`.
+- Keep `README.md` aligned with actual config behavior; do not document aspirational behavior.
