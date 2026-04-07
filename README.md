@@ -1,68 +1,222 @@
 # wezterm-config
 
-Modular WezTerm configuration for Windows/WSL development workflows.
+Modular WezTerm configuration for a Windows + WSL workflow.
 
-## Structure
+This repo keeps the real config in WSL, loads it from Windows through a generated stub, and adds a few deliberate behaviors on top of stock WezTerm: explicit SSH domain wiring, a custom `Ctrl-a` leader flow with immediate status refresh, width-aware tab titles, and a watched reload loop for Lua config changes.
 
-```text
-~/.config/wezterm/
-  wezterm.lua          # Entry point
-  constants.lua        # Shared colors, fonts, layout, and tuning values
-  utils.lua            # Width helpers, pane accessors, and label normalization
-  appearance.lua       # Window, font, and tab bar styling
-  graphics.lua         # Per-machine rendering profile selection
-  keys.lua             # Leader-based pane, tab, and workspace shortcuts
-  status.lua           # Tab title formatting and right status bar
-  run_once_wezterm_stub.sh
-```
+## Environment
 
-## Features
+This config assumes:
 
-- Auto-detects the higher-performance Windows GPU path and prefers WebGPU at 165fps there, while keeping a conservative OpenGL 120fps fallback for the integrated-GPU machine
-- Leader-based key bindings for pane navigation, pane resizing, tab control, workspace switching, and launcher access
-- Tab titles prefer foreground process name, then pane title, then a domain-aware fallback label
-- Tab titles are width-aware, so wide Unicode glyphs do not get truncated early
-- Right status bar shows domain, current directory, and time with spacing tuned for integrated window buttons
-- Modular structure — each concern lives in its own file
-- Config lives in WSL and is loaded by a Windows-side stub via UNC path
+- WezTerm runs on Windows
+- the config source lives in WSL at `~/.config/wezterm`
+- WSL2 is available
+- `inotify-tools` is installed for auto-reload
 
-## Setup
-
-### Prerequisites
-
-- [WezTerm](https://wezfurlong.org/wezterm/)
-- WSL2 with Ubuntu 24.04
-- `inotify-tools` for auto-reload
+Install the watcher dependency in WSL:
 
 ```bash
 sudo apt install inotify-tools
 ```
 
-### Installation
+## Quick Start
 
-Clone into `~/.config/wezterm`:
+Clone into the expected location:
 
 ```bash
 git clone https://github.com/nothankyouzzz/wezterm-config ~/.config/wezterm
 ```
 
-Generate the Windows-side stub (run from WSL):
+Generate the Windows-side stub and local watcher script:
 
 ```bash
 bash ~/.config/wezterm/run_once_wezterm_stub.sh
 ```
 
-This writes `%USERPROFILE%\.wezterm.lua` on Windows and generates the config watcher with the correct paths baked in.
+Validate that WezTerm can parse the config without opening the GUI:
 
-Enable the auto-reload watcher:
+```bash
+wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table leader_mode
+```
+
+If your machine is set up for it, enable the watcher service:
 
 ```bash
 systemctl --user enable --now wezterm-watch.service
 ```
 
+## Repository Layout
+
+```text
+~/.config/wezterm/
+  wezterm.lua              # Entry point; wires modules together
+  constants.lua            # Declarative shared config
+  appearance.lua           # Window, fonts, colors, tab bar styling
+  graphics.lua             # GPU/backend selection
+  domains.lua              # WSL default domain and explicit SSH domains
+  keys.lua                 # Custom leader state machine and key bindings
+  status.lua               # Tab titles and right status rendering
+  utils.lua                # Shared string, width, and pane helpers
+  run_once_wezterm_stub.sh # Generates the Windows stub and watcher script
+```
+
+`wezterm.lua` should stay thin. If a value is user-facing configuration, it belongs in `constants.lua`. If it is only an implementation detail of one module, keep it in that module.
+
+## User-Tunable Settings
+
+The main file you should edit is `constants.lua`.
+
+If you are changing behavior rather than tuning values, start from the owning module instead:
+
+- `domains.lua` for WSL/SSH domain resolution
+- `keys.lua` for leader bindings and key tables
+- `status.lua` for tab titles and right status rendering
+
+### Appearance
+
+Adjust fonts, sizes, theme, window padding, and tab bar presentation in:
+
+- `C.FONTS`
+- `C.THEME`
+- `C.WINDOW`
+- `C.TAB_BAR`
+- `C.TITLE_BAR`
+- `C.TAB`
+
+### Leader Key
+
+The leader key and timeout live in:
+
+- `C.LEADER.key`
+- `C.LEADER.mods`
+- `C.LEADER.timeout_milliseconds`
+
+### WSL Default Domain
+
+WSL domain preference is explicit rather than hardcoded in logic. Change:
+
+- `C.WSL.preferred_distributions`
+
+Entries are checked in order. The first match wins.
+
+### SSH Hosts
+
+Managed SSH hosts are declared explicitly in:
+
+- `C.SSH.custom_domains`
+
+For each host, set values such as:
+
+- `name`
+- `remote_address`
+- `username`
+- `assume_shell`
+- `multiplexing`
+- `remote_wezterm_path`
+
+If a host should use remote WezTerm multiplexing, set `multiplexing = "WezTerm"`. Otherwise it stays on plain SSH and may optionally declare `assume_shell = "Posix"`.
+
+### Graphics Profile
+
+GPU/backend preferences live in:
+
+- `C.GRAPHICS.preferred`
+- `C.GRAPHICS.fallback`
+
+## Non-Default Behaviors
+
+### Custom Leader Handling
+
+This repo does not use WezTerm's built-in `config.leader`.
+
+Instead, `keys.lua` activates a custom `leader_mode` key table so the status bar can show `LEADER` immediately when `Ctrl-a` is pressed. The leader indicator clears as soon as the follow-up key is consumed, or shortly after timeout/unknown-key cancellation.
+
+`Ctrl-a Ctrl-a` still sends a literal `Ctrl-a` through to the running program.
+
+### Tab Title Resolution
+
+Tab titles are resolved in this order:
+
+1. foreground process name
+2. pane title
+3. domain-aware fallback label
+
+Labels are width-aware, so wide glyphs do not get truncated based on byte length.
+
+### Status Bar
+
+The right status bar shows:
+
+- current leader mode, when active
+- current domain
+- current directory
+- day and time
+
+It updates via `update-status`, with extra refreshes triggered by the custom leader flow so `LEADER` does not wait for the default interval to appear.
+
+### Auto-Reload Watcher
+
+The generated watcher script touches the Windows stub when `.lua` files change. It listens for:
+
+- `close_write`
+- `create`
+- `move`
+- `delete`
+
+## Windows/WSL Loading Model
+
+WezTerm on Windows loads `%USERPROFILE%\.wezterm.lua`.
+
+That file is generated by `run_once_wezterm_stub.sh` and does two things:
+
+1. rewrites Lua module loading so `require()` resolves over the WSL UNC path
+2. executes the real `wezterm.lua` inside `~/.config/wezterm`
+
+This lets the config live entirely in WSL while still using the native Windows WezTerm GUI.
+
+## Validate Changes
+
+Use this as the basic parse check after edits:
+
+```bash
+wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table leader_mode
+```
+
+Then manually verify the affected behavior inside WezTerm:
+
+- leader activation and `Ctrl-a Ctrl-a`
+- pane and tab bindings
+- tab title rendering
+- SSH domain selection
+- right status contents
+- watcher-triggered reloads, if you changed the stub script
+
+## Troubleshooting
+
+If WezTerm does not pick up changes:
+
+- rerun `bash ~/.config/wezterm/run_once_wezterm_stub.sh`
+- confirm `%USERPROFILE%\.wezterm.lua` was regenerated
+- confirm `config_watcher.sh` exists and is executable
+- run the CLI parse check above before reopening the GUI
+
+If a new SSH host does not behave as expected:
+
+- confirm it is declared in `C.SSH.custom_domains`
+- confirm `multiplexing` is set intentionally
+- confirm `remote_wezterm_path` is set when using remote WezTerm mux
+- confirm `assume_shell = "Posix"` is only used when you want plain SSH tabs/panes to inherit the remote cwd
+
+## Maintenance Notes
+
+- `config_watcher.sh` is generated and should not be committed.
+- Keep machine-specific SSH hosts, usernames, and WSL preferences in `constants.lua`.
+- Keep absolute Windows paths confined to `run_once_wezterm_stub.sh`.
+- Keep `wezterm.lua` thin and push logic into focused modules.
+
 ### chezmoi
 
-If you manage dotfiles with chezmoi, add to `.chezmoiexternal.toml`:
+If you manage dotfiles with chezmoi, add:
 
 ```toml
 [".config/wezterm"]
@@ -71,18 +225,4 @@ If you manage dotfiles with chezmoi, add to `.chezmoiexternal.toml`:
     refreshPeriod = "168h"
 ```
 
-And add `run_once_wezterm_stub.sh` to your chezmoi source directory so the stub is regenerated on each new machine.
-
-## How it works
-
-WezTerm runs on Windows and looks for `%USERPROFILE%\.wezterm.lua`. This stub hooks into Lua's `require` to redirect module resolution over the UNC path to WSL, then loads `wezterm.lua` as the real entry point. Any changes to files under `~/.config/wezterm/` are detected by `inotifywait`, which touches the stub to trigger WezTerm's built-in config reload.
-
-Tab titles are resolved from the active pane in this order:
-
-1. foreground process name
-2. pane title
-3. domain-aware fallback label
-
-WSL domains are normalized from `WSL:<distro>` to `<distro>`, and the local Windows domain uses `WEZTERM_PROG` when shell integration provides it.
-
-The leader key is `CTRL-a`. Press `CTRL-a CTRL-a` to send a literal `CTRL-a` through to the running program.
+And keep `run_once_wezterm_stub.sh` in your chezmoi source so the stub can be regenerated on a new machine.
