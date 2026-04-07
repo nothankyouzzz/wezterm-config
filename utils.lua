@@ -34,20 +34,41 @@ local function cwd_from_uri(cwd_uri)
 end
 
 -- Pane accessors
-local function pane_cwd(target)
+local function pane_value(target, method_name, field_name, default)
 	if not target then
-		return ""
+		return default
 	end
 
-	return cwd_from_uri(target:get_current_working_dir())
+	-- We use these helpers from both runtime Pane objects and the
+	-- PaneInformation snapshots passed to format-tab-title.
+	-- Keep the method + field fallback so tab title rendering doesn't error and
+	-- silently fall back to WezTerm's default tab label.
+	local ok, getter = pcall(function()
+		return target[method_name]
+	end)
+	if ok and type(getter) == "function" then
+		local ok_value, value = pcall(getter, target)
+		if ok_value and value ~= nil then
+			return value
+		end
+	end
+
+	local ok, value = pcall(function()
+		return target[field_name]
+	end)
+	if ok and value ~= nil then
+		return value
+	end
+
+	return default
+end
+
+local function pane_cwd(target)
+	return cwd_from_uri(pane_value(target, "get_current_working_dir", "current_working_dir", ""))
 end
 
 local function pane_user_vars(target)
-	if not target then
-		return {}
-	end
-
-	local vars = target:get_user_vars()
+	local vars = pane_value(target, "get_user_vars", "user_vars", {})
 	if type(vars) ~= "table" then
 		return {}
 	end
@@ -132,27 +153,15 @@ function M.truncate_right(text, max_width)
 end
 
 function M.pane_title(target)
-	if not target then
-		return ""
-	end
-
-	return target:get_title()
+	return pane_value(target, "get_title", "title", "")
 end
 
 function M.pane_process_name(target)
-	if not target then
-		return ""
-	end
-
-	return target:get_foreground_process_name()
+	return pane_value(target, "get_foreground_process_name", "foreground_process_name", "")
 end
 
 function M.pane_domain_name(target)
-	if not target then
-		return ""
-	end
-
-	return target:get_domain_name()
+	return pane_value(target, "get_domain_name", "domain_name", "")
 end
 
 function M.dir_label(target)

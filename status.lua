@@ -72,6 +72,8 @@ local function leader_is_active(window)
 end
 
 local function tab_label(tab)
+	-- format-tab-title provides tab.active_pane as PaneInformation rather than a
+	-- live Pane, so the utils accessors must handle both shapes.
 	local process = U.normalized_label_text(U.pane_process_name(tab.active_pane))
 	if process then
 		return process
