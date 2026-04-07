@@ -8,8 +8,9 @@ WATCHER_PATH="$HOME/.config/wezterm/config_watcher.sh"
 
 cat >"$STUB_PATH" <<EOF
 local wsl_config_dir = "\\\\\\\\wsl.localhost\\\\$WSL_DISTRO\\\\home\\\\$WSL_USER\\\\.config\\\\wezterm"
+local wsl_package_path = wsl_config_dir .. "\\\\?.lua"
 
-package.path = wsl_config_dir .. "\\\\?.lua;" .. package.path
+package.path = wsl_package_path .. ";" .. package.path
 
 local _require = require
 require = function(modname)
@@ -17,14 +18,18 @@ require = function(modname)
         return package.loaded[modname]
     end
 
-    local path = wsl_config_dir .. "\\\\" .. modname:gsub("%.", "\\\\") .. ".lua"
-    local ok, result = pcall(dofile, path)
-    if ok then
-        package.loaded[modname] = result
-        return result
+    local path = package.searchpath(modname, wsl_package_path, ".", "\\\\")
+    if not path then
+        return _require(modname)
     end
 
-    return _require(modname)
+    local result = dofile(path)
+    if result == nil then
+        result = true
+    end
+
+    package.loaded[modname] = result
+    return result
 end
 
 return dofile(wsl_config_dir .. "\\\\wezterm.lua")
@@ -38,7 +43,7 @@ cat >"$WATCHER_PATH" <<EOF
 STUB="/mnt/c/Users/$WIN_USER/.wezterm.lua"
 CONFIG_DIR="\$HOME/.config/wezterm"
 
-inotifywait -m -r -e close_write --include '\\.lua\$' "\$CONFIG_DIR" |
+inotifywait -m -r -e close_write,create,move,delete --include '\\.lua\$' "\$CONFIG_DIR" |
 while read -r _ _ _; do
     touch "\$STUB"
 done

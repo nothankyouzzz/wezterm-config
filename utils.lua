@@ -34,37 +34,20 @@ local function cwd_from_uri(cwd_uri)
 end
 
 -- Pane accessors
-local function pane_value(target, method_name, field_name, default)
-	if not target then
-		return default
-	end
-
-	local ok, getter = pcall(function()
-		return target[method_name]
-	end)
-	if ok and type(getter) == "function" then
-		local ok2, value = pcall(getter, target)
-		if ok2 and value ~= nil then
-			return value
-		end
-	end
-
-	local ok3, value = pcall(function()
-		return target[field_name]
-	end)
-	if ok3 and value ~= nil then
-		return value
-	end
-
-	return default
-end
-
 local function pane_cwd(target)
-	return cwd_from_uri(pane_value(target, "get_current_working_dir", "current_working_dir", ""))
+	if not target then
+		return ""
+	end
+
+	return cwd_from_uri(target:get_current_working_dir())
 end
 
 local function pane_user_vars(target)
-	local vars = pane_value(target, "get_user_vars", "user_vars", {})
+	if not target then
+		return {}
+	end
+
+	local vars = target:get_user_vars()
 	if type(vars) ~= "table" then
 		return {}
 	end
@@ -149,15 +132,27 @@ function M.truncate_right(text, max_width)
 end
 
 function M.pane_title(target)
-	return pane_value(target, "get_title", "title", "")
+	if not target then
+		return ""
+	end
+
+	return target:get_title()
 end
 
 function M.pane_process_name(target)
-	return pane_value(target, "get_foreground_process_name", "foreground_process_name", "")
+	if not target then
+		return ""
+	end
+
+	return target:get_foreground_process_name()
 end
 
 function M.pane_domain_name(target)
-	return pane_value(target, "get_domain_name", "domain_name", "")
+	if not target then
+		return ""
+	end
+
+	return target:get_domain_name()
 end
 
 function M.dir_label(target)
