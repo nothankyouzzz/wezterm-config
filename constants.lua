@@ -6,7 +6,7 @@ local STATUS_DOT = utf8.char(0x25CF)
 M.IGNORED_TAB_LABELS = {
 	wslhost = true,
 	conhost = true,
-	OpenConsole = true,
+	openconsole = true,
 }
 
 -- Typography
@@ -62,6 +62,11 @@ M.LEADER = {
 	key = "a",
 	mods = "CTRL",
 	timeout_milliseconds = 1000,
+}
+
+M.CLIPBOARD_BRIDGE = {
+	key = "v",
+	mods = "CTRL",
 }
 
 M.WSL = {

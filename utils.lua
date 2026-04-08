@@ -4,7 +4,7 @@ local C = require("constants")
 local M = {}
 
 -- Basic string and path helpers
-local function trim(text)
+function M.trim(text)
 	if not text or text == "" then
 		return ""
 	end
@@ -77,7 +77,7 @@ end
 
 -- Label normalization
 local function normalized_domain_label(text)
-	local name = trim(text)
+	local name = M.trim(text)
 	if name == "" then
 		return nil
 	end
@@ -106,6 +106,16 @@ function M.display_width(text)
 	end
 
 	return #text
+end
+
+function M.executable_name(text)
+	text = M.trim(text)
+	if text == "" then
+		return ""
+	end
+
+	text = text:gsub('^["\']+', ""):gsub('["\']+$', "")
+	return basename(text):gsub("%.exe$", "")
 end
 
 function M.center_text(text, width)
@@ -156,6 +166,19 @@ function M.pane_title(target)
 	return pane_value(target, "get_title", "title", "")
 end
 
+function M.pane_user_var(target, name)
+	if not name or name == "" then
+		return ""
+	end
+
+	local value = pane_user_vars(target)[name]
+	if type(value) ~= "string" then
+		return ""
+	end
+
+	return M.trim(value)
+end
+
 function M.pane_process_name(target)
 	return pane_value(target, "get_foreground_process_name", "foreground_process_name", "")
 end
@@ -164,12 +187,17 @@ function M.pane_domain_name(target)
 	return pane_value(target, "get_domain_name", "domain_name", "")
 end
 
+function M.is_wsl_domain(target)
+	local domain = M.pane_domain_name(target)
+	return type(domain) == "string" and domain:match("^WSL:") ~= nil
+end
+
 function M.dir_label(target)
 	return basename(pane_cwd(target))
 end
 
 local function command_label(text)
-	text = trim(text)
+	text = M.trim(text)
 	if text == "" then
 		return nil
 	end
@@ -179,27 +207,76 @@ local function command_label(text)
 		or text:match("^(%S+)")
 		or text
 
-	return M.normalized_label_text(executable)
+	return M.normalized_label_text(M.executable_name(executable))
+end
+
+function M.is_ignored_tab_label(text)
+	local label = M.executable_name(text):lower()
+	if label == "" then
+		return false
+	end
+
+	return C.IGNORED_TAB_LABELS[label] == true
 end
 
 function M.normalized_label_text(text)
-	text = trim(text)
+	text = M.trim(text)
 	if text == "" then
 		return nil
 	end
 
 	-- Keep the right-most label when titles include pipe-delimited context, then
 	-- reduce paths and executables to a short display name.
-	text = trim(text:match("[^|]+$") or text)
-	text = basename(text):gsub("%.exe$", "")
-	if text == "" or C.IGNORED_TAB_LABELS[text] then
+	text = M.executable_name(M.trim(text:match("[^|]+$") or text))
+	if text == "" or M.is_ignored_tab_label(text) then
 		return nil
 	end
 	return text
 end
 
+function M.pane_command_label(target)
+	-- CONSTRAINT: WSL panes need shell-emitted WEZTERM_PROG because the
+	-- Windows-side foreground-process probe is only a best-effort heuristic.
+	local prog = command_label(M.pane_user_var(target, "WEZTERM_PROG"))
+	if prog then
+		return prog
+	end
+
+	local process = M.normalized_label_text(M.pane_process_name(target))
+	if process then
+		return process
+	end
+
+	local title = M.normalized_label_text(M.pane_title(target))
+	if title then
+		return title
+	end
+
+	return nil
+end
+
 function M.domain_label(target)
 	return normalized_domain_label(M.pane_domain_name(target)) or ""
+end
+
+function M.windows_path_to_wsl(path)
+	if type(path) ~= "string" then
+		return nil
+	end
+
+	local drive = path:match("^([A-Za-z]):")
+	if not drive then
+		return nil
+	end
+
+	local suffix = path:sub(3):gsub("^[/\\]+", "")
+	suffix = suffix:gsub("\\", "/")
+	return string.format("/mnt/%s/%s", drive:lower(), suffix)
+end
+
+function M.shell_single_quote(text)
+	text = tostring(text or "")
+	return "'" .. text:gsub("'", [['"'"']]) .. "'"
 end
 
 function M.tab_fallback_label(target)
@@ -211,8 +288,7 @@ function M.tab_fallback_label(target)
 	if domain == "local" then
 		-- The local Windows domain has no distro context, so prefer shell
 		-- integration's WEZTERM_PROG over a generic fallback label.
-		local user_vars = pane_user_vars(target)
-		return command_label(user_vars.WEZTERM_PROG) or domain
+		return command_label(M.pane_user_var(target, "WEZTERM_PROG")) or domain
 	end
 
 	return domain

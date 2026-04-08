@@ -1,5 +1,6 @@
 local wezterm = require("wezterm")
 local C = require("constants")
+local ClipboardBridge = require("clipboard_bridge")
 local Status = require("status")
 
 local act = wezterm.action
@@ -78,6 +79,7 @@ function M.apply(cfg)
 			mods = C.LEADER.mods,
 			action = leader_activation(),
 		},
+		ClipboardBridge.key_binding(C.CLIPBOARD_BRIDGE.key, C.CLIPBOARD_BRIDGE.mods),
 	}
 
 	cfg.keys = keys
