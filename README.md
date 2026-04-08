@@ -4,6 +4,9 @@ Modular WezTerm configuration for a Windows + WSL workflow.
 
 This repo keeps the real config in WSL, loads it from Windows through a generated stub, and adds a few deliberate behaviors on top of stock WezTerm: explicit SSH domain wiring, a custom `Ctrl-a` leader flow with immediate status refresh, width-aware tab titles, and a watched reload loop for Lua config changes.
 
+For WSL panes, this repo can also consume optional shell integration signals so
+app-specific behaviors such as the Claude clipboard bridge work more reliably.
+
 ## Environment
 
 This config assumes:
@@ -61,6 +64,21 @@ systemctl --user enable --now wezterm-watch.service
 ```
 
 `wezterm.lua` should stay thin. If a value is user-facing configuration, it belongs in `constants.lua`. If it is only an implementation detail of one module, keep it in that module.
+
+## WSL Shell Integration
+
+If you use `fish` inside WSL, this repo includes
+`shell/wezterm-user-vars.fish`. Source it from your fish startup so WezTerm
+gets better command context for WSL-specific behaviors:
+
+```fish
+source ~/.config/wezterm/shell/wezterm-user-vars.fish
+```
+
+The simplest place to add that is `~/.config/fish/config.fish`.
+
+If you prefer `fish` auto-loading from `conf.d`, you can instead symlink it
+into `~/.config/fish/conf.d/`.
 
 ## User-Tunable Settings
 
@@ -127,19 +145,32 @@ GPU/backend preferences live in:
 
 ### Custom Leader Handling
 
-This repo does not use WezTerm's built-in `config.leader`.
-
-Instead, `keys.lua` activates a custom `leader_mode` key table so the status bar can show `LEADER` immediately when `Ctrl-a` is pressed. The leader indicator clears as soon as the follow-up key is consumed, or shortly after timeout/unknown-key cancellation.
+This repo uses a custom leader flow so the status bar can show `LEADER`
+immediately when `Ctrl-a` is pressed, rather than waiting for the next status
+refresh.
 
 `Ctrl-a Ctrl-a` still sends a literal `Ctrl-a` through to the running program.
 
+### WSL Clipboard Image Bridge
+
+In WSL Claude Code panes, `Ctrl-v` first tries to export a Windows clipboard
+image to a temporary PNG and paste the resulting WSL path as bracketed text.
+
+This is aimed at terminal apps such as Claude Code that can turn a pasted image
+filepath into an attachment but cannot reliably read the Windows clipboard from
+inside WSL.
+
+If there is no image in the Windows clipboard, the binding falls back to
+WezTerm's normal clipboard paste behavior. Bridge failures are surfaced as a
+warning instead of silently pasting unrelated text. Non-Claude panes receive
+the raw `Ctrl-v` keypress unchanged.
+
 ### Tab Title Resolution
 
-Tab titles are resolved in this order:
+Tab titles use the raw pane title when it is meaningful.
 
-1. foreground process name
-2. pane title
-3. domain-aware fallback label
+If the title is empty or looks like an internal placeholder, the config falls
+back to a domain-aware label.
 
 Labels are width-aware, so wide glyphs do not get truncated based on byte length.
 
@@ -152,7 +183,8 @@ The right status bar shows:
 - current directory
 - day and time
 
-It updates via `update-status`, with extra refreshes triggered by the custom leader flow so `LEADER` does not wait for the default interval to appear.
+Leader state is refreshed immediately so the `LEADER` indicator appears and
+clears without waiting for the normal status update cadence.
 
 ### Auto-Reload Watcher
 
@@ -184,7 +216,9 @@ wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table 
 
 Then manually verify the affected behavior inside WezTerm:
 
+- a WSL `fish` pane updates its tab title when you run different commands
 - leader activation and `Ctrl-a Ctrl-a`
+- `Ctrl-v` in a WSL Claude Code pane with an image in the Windows clipboard
 - pane and tab bindings
 - tab title rendering
 - SSH domain selection

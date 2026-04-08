@@ -74,13 +74,8 @@ end
 local function tab_label(tab)
 	-- format-tab-title provides tab.active_pane as PaneInformation rather than a
 	-- live Pane, so the utils accessors must handle both shapes.
-	local process = U.normalized_label_text(U.pane_process_name(tab.active_pane))
-	if process then
-		return process
-	end
-
-	local title = U.normalized_label_text(U.pane_title(tab.active_pane))
-	if title then
+	local title = U.pane_title(tab.active_pane)
+	if title ~= "" and not U.is_ignored_tab_label(title) then
 		return title
 	end
 
