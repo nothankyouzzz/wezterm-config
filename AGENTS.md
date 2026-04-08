@@ -69,6 +69,8 @@
 
 - Use Conventional Commit-style prefixes such as `feat:`, `fix:`, and `refactor:`.
 - Keep commit subjects short and imperative, for example `fix: handle empty pane title`.
+- Keep simple commits lean: a short subject is enough unless extra context is needed to avoid ambiguity.
+- Add a detailed commit message body only for changes complex enough that behavior, rationale, or operational boundaries would be unclear from the diff and subject alone.
 - Keep generated artifacts out of Git.
 
 ## PR Guidelines
@@ -82,3 +84,16 @@
 - Document new external dependencies in `README.md`.
 - Document any new validation step in `README.md`.
 - Keep `README.md` aligned with actual config behavior; do not document aspirational behavior.
+- Keep `README.md` user-facing: describe behavior and usage, not internal code paths, helper names, or implementation-specific control flow unless that detail is required to operate or debug the config.
+
+## Session Learnings
+
+<project_constraints>
+- For WSL command-aware behaviors, treat shell-emitted `WEZTERM_PROG` as the authoritative signal and consult the raw pane title only when that user var is missing. This avoids hijacking panes whose titles happen to mention the target app.
+- Display raw pane titles as-is in `status.lua`; only fall back when the title is empty or is an ignored internal placeholder such as `wslhost.exe`.
+</project_constraints>
+
+<known_pitfalls>
+- When intercepting a common key such as `Ctrl-v`, non-target panes must receive the raw `SendKey` fallback rather than `PasteFrom("Clipboard")`, or unrelated terminal apps lose their original key behavior.
+- In `clipboard_bridge.lua`, only the explicit `NO_IMAGE` result may degrade to normal clipboard paste. Export failures, invalid bridge output, and Windows-to-WSL path mapping failures must stay observable through warnings instead of silently pasting unrelated text.
+</known_pitfalls>
