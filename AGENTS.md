@@ -17,7 +17,7 @@
 
 ### Scripts and generated files
 
-- `run_once_wezterm_stub.sh`: generates the Windows `%USERPROFILE%\\.wezterm.lua` stub and local watcher script
+- `run_once_wezterm_stub.sh`: generates the Windows `%USERPROFILE%\\.wezterm.lua` stub, local watcher script, and user service unit
 - `config_watcher.sh`: generated artifact; do not commit it
 
 ### Ownership rules
@@ -44,13 +44,13 @@
 ## Development Commands
 
 - `bash ~/.config/wezterm/run_once_wezterm_stub.sh`
-  Regenerate the Windows stub and local watcher script after bootstrap or path changes.
+  Regenerate the Windows stub, local watcher script, and user service unit after bootstrap or path changes.
 - `bash ~/.config/wezterm/config_watcher.sh`
   Watch `.lua` files and touch the Windows stub to trigger WezTerm reloads.
 - `wezterm --config-file ~/.config/wezterm/wezterm.lua show-keys --lua --key-table leader_mode`
   Validate that WezTerm can parse the config and materialize the custom leader key table.
 - `systemctl --user enable --now wezterm-watch.service`
-  Enable the watcher as a user service if this machine is configured for it.
+  Enable the generated watcher as a user service.
 
 ## Validation
 
@@ -63,7 +63,7 @@
   - domain selection
   - status text
   - stub generation
-- If you change the bootstrap script, rerun it and confirm that `.wezterm.lua` and `config_watcher.sh` are regenerated correctly.
+- If you change the bootstrap script, rerun it and confirm that `.wezterm.lua`, `config_watcher.sh`, and `wezterm-watch.service` are regenerated correctly.
 
 ## Commit Guidelines
 

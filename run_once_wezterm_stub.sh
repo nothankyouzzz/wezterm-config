@@ -5,6 +5,8 @@ WSL_USER=$USER
 WSL_DISTRO=$WSL_DISTRO_NAME
 STUB_PATH="/mnt/c/Users/$WIN_USER/.wezterm.lua"
 WATCHER_PATH="$HOME/.config/wezterm/config_watcher.sh"
+SYSTEMD_DIR="$HOME/.config/systemd/user"
+SERVICE_PATH="$SYSTEMD_DIR/wezterm-watch.service"
 
 cat >"$STUB_PATH" <<EOF
 local wsl_config_dir = "\\\\\\\\wsl.localhost\\\\$WSL_DISTRO\\\\home\\\\$WSL_USER\\\\.config\\\\wezterm"
@@ -51,3 +53,29 @@ EOF
 
 chmod +x "$WATCHER_PATH"
 echo "config_watcher.sh written to $WATCHER_PATH"
+
+mkdir -p "$SYSTEMD_DIR"
+
+cat >"$SERVICE_PATH" <<EOF
+[Unit]
+Description=Watch WezTerm config changes and trigger reloads
+
+[Service]
+Type=simple
+ExecStart=$WATCHER_PATH
+WorkingDirectory=$HOME/.config/wezterm
+Restart=always
+
+[Install]
+WantedBy=default.target
+EOF
+
+echo "wezterm-watch.service written to $SERVICE_PATH"
+
+if command -v systemctl >/dev/null 2>&1; then
+    if systemctl --user daemon-reload; then
+        echo "systemd user daemon reloaded"
+    else
+        echo "warning: failed to reload the systemd user daemon; run 'systemctl --user daemon-reload' manually" >&2
+    fi
+fi

@@ -79,6 +79,14 @@ function M.apply(cfg)
 			mods = C.LEADER.mods,
 			action = leader_activation(),
 		},
+		{ key = "h", mods = "ALT", action = act.ActivatePaneDirection("Left") },
+		{ key = "j", mods = "ALT", action = act.ActivatePaneDirection("Down") },
+		{ key = "k", mods = "ALT", action = act.ActivatePaneDirection("Up") },
+		{ key = "l", mods = "ALT", action = act.ActivatePaneDirection("Right") },
+		{ key = "LeftArrow", mods = "ALT", action = act.AdjustPaneSize({ "Left", RESIZE_STEP }) },
+		{ key = "DownArrow", mods = "ALT", action = act.AdjustPaneSize({ "Down", RESIZE_STEP }) },
+		{ key = "UpArrow", mods = "ALT", action = act.AdjustPaneSize({ "Up", RESIZE_STEP }) },
+		{ key = "RightArrow", mods = "ALT", action = act.AdjustPaneSize({ "Right", RESIZE_STEP }) },
 		ClipboardBridge.key_binding(C.CLIPBOARD_BRIDGE.key, C.CLIPBOARD_BRIDGE.mods),
 	}
 
@@ -91,15 +99,6 @@ function M.apply(cfg)
 			-- Panes
 			leader_binding("v", act.SplitHorizontal({ domain = "CurrentPaneDomain" })),
 			leader_binding("s", act.SplitVertical({ domain = "CurrentPaneDomain" })),
-			leader_binding("h", act.ActivatePaneDirection("Left")),
-			leader_binding("j", act.ActivatePaneDirection("Down")),
-			leader_binding("k", act.ActivatePaneDirection("Up")),
-			leader_binding("l", act.ActivatePaneDirection("Right")),
-			leader_binding("r", act.ActivateKeyTable({
-				name = "resize_pane",
-				one_shot = false,
-				until_unknown = true,
-			})),
 			leader_binding("z", act.TogglePaneZoomState),
 			leader_binding("x", act.CloseCurrentPane({ confirm = true })),
 
@@ -121,19 +120,6 @@ function M.apply(cfg)
 				flags = "FUZZY|TABS|WORKSPACES|DOMAINS|COMMANDS|LAUNCH_MENU_ITEMS",
 				title = "Launcher",
 			})),
-		},
-		resize_pane = {
-			{ key = "h", action = act.AdjustPaneSize({ "Left", RESIZE_STEP }) },
-			{ key = "j", action = act.AdjustPaneSize({ "Down", RESIZE_STEP }) },
-			{ key = "k", action = act.AdjustPaneSize({ "Up", RESIZE_STEP }) },
-			{ key = "l", action = act.AdjustPaneSize({ "Right", RESIZE_STEP }) },
-			{ key = "LeftArrow", action = act.AdjustPaneSize({ "Left", RESIZE_STEP }) },
-			{ key = "DownArrow", action = act.AdjustPaneSize({ "Down", RESIZE_STEP }) },
-			{ key = "UpArrow", action = act.AdjustPaneSize({ "Up", RESIZE_STEP }) },
-			{ key = "RightArrow", action = act.AdjustPaneSize({ "Right", RESIZE_STEP }) },
-			{ key = "Escape", action = "PopKeyTable" },
-			{ key = "Enter", action = "PopKeyTable" },
-			{ key = "q", action = "PopKeyTable" },
 		},
 	}
 

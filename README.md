@@ -30,7 +30,7 @@ Clone into the expected location:
 git clone https://github.com/nothankyouzzz/wezterm-config ~/.config/wezterm
 ```
 
-Generate the Windows-side stub and local watcher script:
+Generate the Windows-side stub, local watcher script, and user service unit:
 
 ```bash
 bash ~/.config/wezterm/run_once_wezterm_stub.sh
@@ -188,7 +188,10 @@ clears without waiting for the normal status update cadence.
 
 ### Auto-Reload Watcher
 
-The generated watcher script touches the Windows stub when `.lua` files change. It listens for:
+`run_once_wezterm_stub.sh` generates both a watcher script and
+`~/.config/systemd/user/wezterm-watch.service`.
+
+The watcher touches the Windows stub when `.lua` files change. It listens for:
 
 - `close_write`
 - `create`
@@ -231,7 +234,9 @@ If WezTerm does not pick up changes:
 
 - rerun `bash ~/.config/wezterm/run_once_wezterm_stub.sh`
 - confirm `%USERPROFILE%\.wezterm.lua` was regenerated
+- confirm `~/.config/systemd/user/wezterm-watch.service` exists
 - confirm `config_watcher.sh` exists and is executable
+- run `systemctl --user status wezterm-watch.service`
 - run the CLI parse check above before reopening the GUI
 
 If a new SSH host does not behave as expected:
@@ -244,6 +249,7 @@ If a new SSH host does not behave as expected:
 ## Maintenance Notes
 
 - `config_watcher.sh` is generated and should not be committed.
+- `wezterm-watch.service` is generated into `~/.config/systemd/user/` and should not be committed from there.
 - Keep machine-specific SSH hosts, usernames, and WSL preferences in `constants.lua`.
 - Keep absolute Windows paths confined to `run_once_wezterm_stub.sh`.
 - Keep `wezterm.lua` thin and push logic into focused modules.
