@@ -10,7 +10,7 @@ SERVICE_PATH="$SYSTEMD_DIR/wezterm-watch.service"
 
 cat >"$STUB_PATH" <<EOF
 local wsl_config_dir = "\\\\\\\\wsl.localhost\\\\$WSL_DISTRO\\\\home\\\\$WSL_USER\\\\.config\\\\wezterm"
-local wsl_package_path = wsl_config_dir .. "\\\\?.lua"
+local wsl_package_path = wsl_config_dir .. "\\\\?.lua;" .. wsl_config_dir .. "\\\\lua\\\\?.lua"
 
 package.path = wsl_package_path .. ";" .. package.path
 
