@@ -99,10 +99,17 @@ local function parse_export_output(stdout)
 end
 
 local function dump_windows_clipboard_image(cached_hash, cached_path)
+  -- Embed values directly as PowerShell variable assignments.
+  -- Passing them as extra args after -Command causes PowerShell to execute each
+  -- arg as a separate statement, so a SHA-256 hash string gets run as a command
+  -- name and fails with an error.
+  local safe_hash = ("'" .. (cached_hash or ""):gsub("'", "''") .. "'")
+  local safe_path = ("'" .. (cached_path or ""):gsub("'", "''") .. "'")
   local script = table.concat({
-    "param([string]$ExpectedHash, [string]$ExistingPath)",
     "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
     "$ErrorActionPreference = 'Stop'",
+    "$ExpectedHash = " .. safe_hash,
+    "$ExistingPath = " .. safe_path,
     "$img = $null",
     "$stream = $null",
     "$sha = $null",
@@ -141,8 +148,6 @@ local function dump_windows_clipboard_image(cached_hash, cached_path)
     "-NoProfile",
     "-Command",
     script,
-    cached_hash or "",
-    cached_path or "",
   })
 
   if ok then
