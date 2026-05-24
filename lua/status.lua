@@ -66,27 +66,6 @@ local function current_pane(window, fallback_pane)
   return fallback_pane
 end
 
-local function pane_is_zoomed(window)
-  local ok, tab = pcall(function()
-    return window:active_tab()
-  end)
-  if not ok or not tab then
-    return false
-  end
-  local ok2, panes = pcall(function()
-    return tab:panes_with_info()
-  end)
-  if not ok2 or not panes then
-    return false
-  end
-  for _, info in ipairs(panes) do
-    if info.is_active and info.is_zoomed then
-      return true
-    end
-  end
-  return false
-end
-
 local function leader_is_active(window)
   local state = state_for_window(window)
   return state and state.active or false
@@ -120,7 +99,7 @@ local function current_mode_label(window)
   if leader_is_active(window) then
     table.insert(parts, C.TAB_BAR.leader_label)
   end
-  if pane_is_zoomed(window) then
+  if U.pane_is_zoomed(window) then
     table.insert(parts, C.TAB_BAR.zoom_label)
   end
   if #parts > 0 then

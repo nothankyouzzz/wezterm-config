@@ -1,5 +1,6 @@
 local wezterm = require("wezterm")
 local C = require("constants")
+local U = require("utils")
 local ClipboardBridge = require("clipboard_bridge")
 local Status = require("status")
 
@@ -67,6 +68,20 @@ local function trim(text)
   return text:match("^%s*(.-)%s*$")
 end
 
+local function zoom_aware_switch(direction)
+  return wezterm.action_callback(function(window, pane)
+    local was_zoomed = U.pane_is_zoomed(window)
+    window:perform_action(act.ActivatePaneDirection(direction), pane)
+    if was_zoomed then
+      local new_pane = window:active_pane()
+      if not U.pane_is_zoomed(window) then
+        window:perform_action(act.TogglePaneZoomState, new_pane)
+      end
+      Status.refresh(window, new_pane)
+    end
+  end)
+end
+
 local function new_workspace_prompt()
   return act.PromptInputLine({
     description = "Enter name for new workspace",
@@ -86,10 +101,10 @@ function M.apply(cfg)
       mods = C.LEADER.mods,
       action = leader_activation(),
     },
-    { key = "h", mods = "ALT", action = act.ActivatePaneDirection("Left") },
-    { key = "j", mods = "ALT", action = act.ActivatePaneDirection("Down") },
-    { key = "k", mods = "ALT", action = act.ActivatePaneDirection("Up") },
-    { key = "l", mods = "ALT", action = act.ActivatePaneDirection("Right") },
+    { key = "h", mods = "ALT", action = zoom_aware_switch("Left") },
+    { key = "j", mods = "ALT", action = zoom_aware_switch("Down") },
+    { key = "k", mods = "ALT", action = zoom_aware_switch("Up") },
+    { key = "l", mods = "ALT", action = zoom_aware_switch("Right") },
     { key = "\\", mods = "ALT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
     { key = "-", mods = "ALT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
     { key = "w", mods = "ALT", action = act.CloseCurrentPane({ confirm = true }) },

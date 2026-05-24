@@ -75,6 +75,27 @@ local function pane_user_vars(target)
   return vars
 end
 
+function M.pane_is_zoomed(window)
+  local ok, tab = pcall(function()
+    return window:active_tab()
+  end)
+  if not ok or not tab then
+    return false
+  end
+  local ok2, panes = pcall(function()
+    return tab:panes_with_info()
+  end)
+  if not ok2 or not panes then
+    return false
+  end
+  for _, info in ipairs(panes) do
+    if info.is_active and info.is_zoomed then
+      return true
+    end
+  end
+  return false
+end
+
 -- Label normalization
 local function normalized_domain_label(text)
   local name = M.trim(text)
