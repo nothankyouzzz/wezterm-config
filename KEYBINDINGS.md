@@ -9,7 +9,7 @@
 | Binding | Action |
 |---|---|
 | `ALT+H/J/K/L` | Move focus left/down/up/right |
-| `ALT+Left/Down/Up/Right` | Resize pane |
+| `SHIFT+ALT+Left/Down/Up/Right` | Resize pane |
 | `ALT+\` | Split pane horizontally |
 | `ALT+-` | Split pane vertically |
 | `ALT+W` | Close pane |
