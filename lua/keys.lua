@@ -61,13 +61,6 @@ local function append_tab_select_bindings(bindings)
   end
 end
 
-local function trim(text)
-  if not text or text == "" then
-    return ""
-  end
-  return text:match("^%s*(.-)%s*$")
-end
-
 local function zoom_aware_switch(direction)
   return wezterm.action_callback(function(window, pane)
     local was_zoomed = U.pane_is_zoomed(window)
@@ -86,7 +79,7 @@ local function new_workspace_prompt()
   return act.PromptInputLine({
     description = "Enter name for new workspace",
     action = wezterm.action_callback(function(window, pane, line)
-      line = trim(line)
+      line = U.trim(line)
       if line ~= "" then
         window:perform_action(act.SwitchToWorkspace({ name = line }), pane)
       end
@@ -121,7 +114,7 @@ function M.apply(cfg)
     { key = "DownArrow", mods = "SHIFT|ALT", action = act.AdjustPaneSize({ "Down", RESIZE_STEP }) },
     { key = "UpArrow", mods = "SHIFT|ALT", action = act.AdjustPaneSize({ "Up", RESIZE_STEP }) },
     { key = "RightArrow", mods = "SHIFT|ALT", action = act.AdjustPaneSize({ "Right", RESIZE_STEP }) },
-    ClipboardBridge.key_binding(C.CLIPBOARD_BRIDGE.key, C.CLIPBOARD_BRIDGE.mods),
+    ClipboardBridge.key_binding(),
     -- Tabs
     { key = "t", mods = "CTRL|SHIFT", action = act.SpawnTab("CurrentPaneDomain") },
     { key = "w", mods = "CTRL|SHIFT", action = act.CloseCurrentTab({ confirm = true }) },

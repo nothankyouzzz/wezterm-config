@@ -65,11 +65,6 @@ M.LEADER = {
   timeout_milliseconds = 1000,
 }
 
-M.CLIPBOARD_BRIDGE = {
-  key = "v",
-  mods = "CTRL",
-}
-
 M.WSL = {
   preferred_distributions = {
     { type = "exact", value = "Ubuntu-24.04" },

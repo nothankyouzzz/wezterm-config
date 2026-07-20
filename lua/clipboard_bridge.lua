@@ -199,10 +199,10 @@ function M.paste_from_bridge(window, pane)
   paste_quoted_path(pane, wsl_path)
 end
 
-function M.key_binding(key, mods)
+function M.key_binding()
   return {
-    key = key,
-    mods = mods,
+    key = "v",
+    mods = "CTRL",
     action = wezterm.action_callback(function(window, pane)
       M.paste_from_bridge(window, pane)
     end),
