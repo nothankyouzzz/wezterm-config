@@ -165,6 +165,23 @@ WezTerm's normal clipboard paste behavior. Bridge failures are surfaced as a
 warning instead of silently pasting unrelated text. Non-Claude panes receive
 the raw `Ctrl-v` keypress unchanged.
 
+Kimi CLI is not bridged on purpose: it reads the Windows clipboard image
+natively through `powershell.exe`, which produces a real media attachment
+instead of a pasted path. That hand-off needs the temp path env var to cross
+the WSL boundary, so `shell/kimi-clipboard-workaround.fish` (sourced from
+`wezterm-user-vars.fish`) adds `KIMI_WSL_CLIPBOARD_IMAGE_PATH/w` to `WSLENV`.
+Restart fish (or re-source the file) before launching `kimi` for it to take
+effect.
+
+WSLg offers Windows clipboard images to Wayland apps as `image/bmp` only.
+Kimi accepts BMP at the clipboard-selection layer but cannot decode it, which
+silently drops the paste and skips its PowerShell fallback. To work around
+that, the same file wraps `kimi` in a function that prepends
+`shell/kimi-clipboard-shim/` to `PATH`; the shimmed `wl-paste` fails image
+reads so Kimi falls through to the PowerShell PNG path. Text and file-path
+clipboard reads pass through unchanged. The workaround is temporary and can
+be removed once https://github.com/MoonshotAI/kimi-code/pull/1962 ships.
+
 ### Tab Title Resolution
 
 Tab titles use the raw pane title when it is meaningful.

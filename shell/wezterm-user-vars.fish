@@ -6,6 +6,10 @@ if test "$TERM_PROGRAM" != "WezTerm"
 	return
 end
 
+# Temporary Kimi clipboard workaround; delete together with
+# shell/kimi-clipboard-workaround.fish once MoonshotAI/kimi-code#1962 ships.
+source (status dirname)/kimi-clipboard-workaround.fish
+
 function __wezterm_emit_user_var --argument-names name value
 	if not type -q base64
 		return

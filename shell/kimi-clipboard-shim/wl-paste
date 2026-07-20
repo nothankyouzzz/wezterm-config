@@ -1,0 +1,15 @@
+#!/bin/bash
+# wl-paste shim for Kimi CLI under WSLg.
+#
+# WSLg bridges Windows clipboard images as image/bmp only. Kimi's clipboard
+# reader selects image/bmp via wl-paste, but its image pipeline only supports
+# png/jpeg/webp/gif, so the paste is silently dropped and Kimi's WSL
+# PowerShell fallback (which exports a PNG from the Windows clipboard) never
+# runs. Failing image reads here forces Kimi onto that fallback.
+# Text and uri-list reads pass through untouched.
+for arg in "$@"; do
+	case "$arg" in
+	image/*) exit 1 ;;
+	esac
+done
+exec /usr/bin/wl-paste "$@"
